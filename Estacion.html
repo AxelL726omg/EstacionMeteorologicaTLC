@@ -35,12 +35,89 @@
       margin-top: 10px;
       font-size: 18px;
     }
+
+    /* ===== BRÚJULA ===== */
+    .brujula-container {
+      margin: 40px auto;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, #1e242f, #0e1117);
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .brujula-direcciones {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      font-weight: bold;
+      color: #ddd;
+    }
+
+    .brujula-direcciones span {
+      position: absolute;
+      font-size: 1.2em;
+    }
+
+    .norte { top: 10px; left: 50%; transform: translateX(-50%); color: #ff6b6b; }
+    .sur { bottom: 10px; left: 50%; transform: translateX(-50%); }
+    .este { right: 10px; top: 50%; transform: translateY(-50%); }
+    .oeste { left: 10px; top: 50%; transform: translateY(-50%); }
+
+    .aguja {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 6px;
+      height: 130px;
+      background: linear-gradient(to top, #ff4d4d, #ff0000);
+      transform-origin: bottom center;
+      transform: translate(-50%, -100%) rotate(0deg);
+      border-radius: 3px;
+      transition: transform 0.8s ease-in-out;
+    }
+
+    .centro {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px #ff4d4d;
+    }
+
+    #dirTexto {
+      margin-top: 20px;
+      font-size: 22px;
+      color: #4fc3f7;
+    }
   </style>
 </head>
 <body>
   <h1>🌡️ Estación DHT11 - ESP32</h1>
   <div id="status">Conectando al broker MQTT...</div>
 
+  <!-- Brújula -->
+  <div class="brujula-container">
+    <div class="brujula-direcciones">
+      <span class="norte">N</span>
+      <span class="sur">S</span>
+      <span class="este">E</span>
+      <span class="oeste">O</span>
+    </div>
+    <div class="aguja" id="aguja"></div>
+    <div class="centro"></div>
+  </div>
+  <div id="dirTexto">Viento: ---</div>
+
+  <!-- Gráficos -->
   <div class="grafico-container">
     <h2>Temperatura (°C)</h2>
     <canvas id="graficoTemp"></canvas>
@@ -63,11 +140,14 @@
     });
 
     const statusEl = document.getElementById("status");
+    const aguja = document.getElementById("aguja");
+    const dirTexto = document.getElementById("dirTexto");
 
     client.on("connect", () => {
       statusEl.textContent = "✅ Conectado a Flespi MQTT";
       client.subscribe("Estacion/temperatura");
       client.subscribe("Estacion/humedad");
+      client.subscribe("Estacion/direccionDelViento");
     });
 
     client.on("error", (err) => {
@@ -99,20 +179,10 @@
       options: {
         responsive: true,
         scales: {
-          x: {
-            title: { display: true, text: "Tiempo" },
-            ticks: { color: "#ccc" }
-          },
-          y: {
-            title: { display: true, text: "Temperatura (°C)" },
-            ticks: { color: "#ccc" },
-            min: 0,
-            max: 50
-          }
+          x: { ticks: { color: "#ccc" } },
+          y: { min: 0, max: 50, ticks: { color: "#ccc" } }
         },
-        plugins: {
-          legend: { labels: { color: "#fff" } }
-        }
+        plugins: { legend: { labels: { color: "#fff" } } }
       }
     });
 
@@ -136,41 +206,50 @@
       options: {
         responsive: true,
         scales: {
-          x: {
-            title: { display: true, text: "Tiempo" },
-            ticks: { color: "#ccc" }
-          },
-          y: {
-            title: { display: true, text: "Humedad (%)" },
-            ticks: { color: "#ccc" },
-            min: 0,
-            max: 100
-          }
+          x: { ticks: { color: "#ccc" } },
+          y: { min: 0, max: 100, ticks: { color: "#ccc" } }
         },
-        plugins: {
-          legend: { labels: { color: "#fff" } }
-        }
+        plugins: { legend: { labels: { color: "#fff" } } }
       }
     });
 
+    // --- MAPA DE DIRECCIONES A ÁNGULOS ---
+    const angulos = {
+      "Norte": 0,
+      "Noreste": 45,
+      "Este": 90,
+      "Sureste": 135,
+      "Sur": 180,
+      "Suroeste": 225,
+      "Oeste": 270,
+      "Noroeste": 315
+    };
+
     // --- RECIBIR DATOS MQTT ---
     client.on("message", (topic, message) => {
-      const valor = parseFloat(message.toString());
+      const valor = message.toString();
       const hora = new Date().toLocaleTimeString();
 
       if (!tiempo.includes(hora)) tiempo.push(hora);
-      if (tiempo.length > 30) tiempo.shift(); // mantiene solo los últimos 30 puntos
+      if (tiempo.length > 30) tiempo.shift();
 
       if (topic === "Estacion/temperatura") {
-        datosTemp.push(valor);
+        datosTemp.push(parseFloat(valor));
         if (datosTemp.length > 30) datosTemp.shift();
         graficoTemp.update();
       }
 
       if (topic === "Estacion/humedad") {
-        datosHum.push(valor);
+        datosHum.push(parseFloat(valor));
         if (datosHum.length > 30) datosHum.shift();
         graficoHum.update();
+      }
+
+      if (topic === "Estacion/direccionDelViento") {
+        const dir = valor.trim();
+        dirTexto.textContent = "Viento: " + dir;
+        const angulo = angulos[dir] ?? 0;
+        aguja.style.transform = `translate(-50%, -100%) rotate(${angulo}deg)`;
       }
     });
   </script>
