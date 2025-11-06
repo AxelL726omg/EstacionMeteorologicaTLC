@@ -14,9 +14,7 @@
       margin: 0;
       padding: 0;
     }
-    h1 {
-      margin-top: 20px;
-    }
+    h1 { margin-top: 20px; }
     .grafico-container {
       width: 90%;
       max-width: 900px;
@@ -26,15 +24,8 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
       padding: 20px;
     }
-    canvas {
-      width: 100% !important;
-      height: 350px !important;
-    }
-    #status {
-      color: #00ff80;
-      margin-top: 10px;
-      font-size: 18px;
-    }
+    canvas { width: 100% !important; height: 350px !important; }
+    #status { color: #00ff80; margin-top: 10px; font-size: 18px; }
 
     /* ===== BRÚJULA ===== */
     .brujula-container {
@@ -46,7 +37,6 @@
       box-shadow: 0 0 25px rgba(0,0,0,0.5);
       position: relative;
     }
-
     .brujula-direcciones {
       position: absolute;
       top: 50%;
@@ -57,17 +47,11 @@
       font-weight: bold;
       color: #ddd;
     }
-
-    .brujula-direcciones span {
-      position: absolute;
-      font-size: 1.2em;
-    }
-
+    .brujula-direcciones span { position: absolute; font-size: 1.2em; }
     .norte { top: 10px; left: 50%; transform: translateX(-50%); color: #ff6b6b; }
     .sur { bottom: 10px; left: 50%; transform: translateX(-50%); }
     .este { right: 10px; top: 50%; transform: translateY(-50%); }
     .oeste { left: 10px; top: 50%; transform: translateY(-50%); }
-
     .aguja {
       position: absolute;
       top: 50%;
@@ -80,7 +64,6 @@
       border-radius: 3px;
       transition: transform 0.8s ease-in-out;
     }
-
     .centro {
       position: absolute;
       top: 50%;
@@ -92,12 +75,7 @@
       transform: translate(-50%, -50%);
       box-shadow: 0 0 10px #ff4d4d;
     }
-
-    #dirTexto {
-      margin-top: 20px;
-      font-size: 22px;
-      color: #4fc3f7;
-    }
+    #dirTexto { margin-top: 20px; font-size: 22px; color: #4fc3f7; }
   </style>
 </head>
 <body>
@@ -130,7 +108,7 @@
 
   <script>
     // --- CONFIGURACIÓN MQTT (Flespi) ---
-    const MQTT_BROKER = "wss://mqtt.flespi.io:443"; // protocolo seguro
+    const MQTT_BROKER = "wss://mqtt.flespi.io:443";
     const MQTT_TOKEN = "8geCXLJuofGJb2UAOnoiDyxrY9mHIsj2nVyvnC2vVUCdew8Gc37OPhDi0bFrcL4D";
 
     const client = mqtt.connect(MQTT_BROKER, {
@@ -159,71 +137,29 @@
     const datosTemp = [];
     const datosHum = [];
 
-    // --- CONFIGURAR GRÁFICO TEMPERATURA ---
+    // --- CONFIGURAR GRÁFICOS ---
     const ctxTemp = document.getElementById("graficoTemp").getContext("2d");
     const graficoTemp = new Chart(ctxTemp, {
       type: "line",
-      data: {
-        labels: tiempo,
-        datasets: [{
-          label: "Temperatura (°C)",
-          data: datosTemp,
-          borderColor: "#ff6b6b",
-          backgroundColor: "rgba(255,107,107,0.2)",
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 3,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: { ticks: { color: "#ccc" } },
-          y: { min: 0, max: 50, ticks: { color: "#ccc" } }
-        },
-        plugins: { legend: { labels: { color: "#fff" } } }
-      }
+      data: { labels: tiempo, datasets: [{ label:"Temperatura (°C)", data: datosTemp, borderColor:"#ff6b6b", backgroundColor:"rgba(255,107,107,0.2)", tension:0.3, borderWidth:2, pointRadius:3, fill:true }] },
+      options: { responsive:true, scales:{ x:{ ticks:{color:"#ccc"} }, y:{ min:0,max:50,ticks:{color:"#ccc"} } }, plugins:{ legend:{labels:{color:"#fff"}}} }
     });
-
-    // --- CONFIGURAR GRÁFICO HUMEDAD ---
     const ctxHum = document.getElementById("graficoHum").getContext("2d");
     const graficoHum = new Chart(ctxHum, {
-      type: "line",
-      data: {
-        labels: tiempo,
-        datasets: [{
-          label: "Humedad (%)",
-          data: datosHum,
-          borderColor: "#4fc3f7",
-          backgroundColor: "rgba(79,195,247,0.2)",
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 3,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: { ticks: { color: "#ccc" } },
-          y: { min: 0, max: 100, ticks: { color: "#ccc" } }
-        },
-        plugins: { legend: { labels: { color: "#fff" } } }
-      }
+      type:"line",
+      data:{ labels: tiempo, datasets:[{ label:"Humedad (%)", data: datosHum, borderColor:"#4fc3f7", backgroundColor:"rgba(79,195,247,0.2)", tension:0.3, borderWidth:2, pointRadius:3, fill:true }] },
+      options:{ responsive:true, scales:{ x:{ ticks:{color:"#ccc"} }, y:{ min:0,max:100,ticks:{color:"#ccc"} } }, plugins:{ legend:{labels:{color:"#fff"}}} }
     });
 
-    // --- MAPA DE DIRECCIONES A ÁNGULOS ---
-    const angulos = {
-      "Norte": 0,
-      "Noreste": 45,
-      "Este": 90,
-      "Sureste": 135,
-      "Sur": 180,
-      "Suroeste": 225,
-      "Oeste": 270,
-      "Noroeste": 315
-    };
+    // --- MAPA DIRECCIONES ---
+    const angulos = { "Norte":0,"Noreste":45,"Este":90,"Sureste":135,"Sur":180,"Suroeste":225,"Oeste":270,"Noroeste":315 };
+
+    // --- FUNCION PARA ACTUALIZAR BRÚJULA ---
+    function actualizarBrujula(dir) {
+      const angulo = angulos[dir] ?? 0;
+      aguja.style.transform = `translate(-50%, -100%) rotate(${angulo}deg)`;
+      dirTexto.textContent = `Viento: ${dir}`;
+    }
 
     // --- RECIBIR DATOS MQTT ---
     client.on("message", (topic, message) => {
@@ -238,20 +174,43 @@
         if (datosTemp.length > 30) datosTemp.shift();
         graficoTemp.update();
       }
-
       if (topic === "Estacion/humedad") {
         datosHum.push(parseFloat(valor));
         if (datosHum.length > 30) datosHum.shift();
         graficoHum.update();
       }
-
       if (topic === "Estacion/direccionDelViento") {
-        const dir = valor.trim();
-        dirTexto.textContent = "Viento: " + dir;
-        const angulo = angulos[dir] ?? 0;
-        aguja.style.transform = `translate(-50%, -100%) rotate(${angulo}deg)`;
+        actualizarBrujula(valor.trim());
       }
     });
+
+    // --- API OpenWeatherMap ---
+    const API_KEY = "TU_API_KEY"; // reemplazar con tu API key
+    const LAT = -34.6585; // Parque Avellaneda
+    const LON = -58.4898;
+
+    async function obtenerViento() {
+      try {
+        const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=metric`);
+        const data = await resp.json();
+        const deg = data.wind.deg;        // dirección en grados
+        const speed = data.wind.speed;    // velocidad en m/s
+
+        // Convertir grados a dirección cardinal
+        const direcciones = ["Norte","Noreste","Este","Sureste","Sur","Suroeste","Oeste","Noroeste"];
+        const index = Math.floor(((deg + 22.5) % 360) / 45);
+        const dirCardinal = direcciones[index];
+
+        actualizarBrujula(dirCardinal + ` (${speed.toFixed(1)} m/s)` );
+      } catch(err) {
+        console.error("Error API OpenWeatherMap:", err);
+      }
+    }
+
+    // Actualiza cada 30 segundos
+    obtenerViento();
+    setInterval(obtenerViento, 30000);
+
   </script>
 </body>
 </html>
