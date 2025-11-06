@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Estación DHT11 - Gráfico en tiempo real</title>
+  <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #0e1117;
+      color: white;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    canvas {
+      max-width: 90%;
+      margin: 20px auto;
+      background: #1a1f27;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    #status {
+      color: #00ff80;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌡️ Estación DHT11 - ESP32</h1>
+  <div id="status">Conectando al broker MQTT...</div>
+
+  <canvas id="grafico" height="120"></canvas>
+
+  <script>
+    // --- CONFIGURACIÓN MQTT (Flespi) ---
+    const MQTT_BROKER = "wss://mqtt.flespi.io:443"; // protocolo seguro para navegador
+    const MQTT_TOKEN = "8geCXLJuofGJb2UAOnoiDyxrY9mHIsj2nVyvnC2vVUCdew8Gc37OPhDi0bFrcL4D";
+
+    // --- CLIENTE MQTT ---
+    const client = mqtt.connect(MQTT_BROKER, {
+      username: MQTT_TOKEN,
+      password: "", // sin contraseña
+      keepalive: 60,
+    });
+
+    const statusEl = document.getElementById("status");
+
+    client.on("connect", () => {
+      statusEl.textContent = "✅ Conectado a Flespi MQTT";
+      client.subscribe("Estacion/temperatura");
+      client.subscribe("Estacion/humedad");
+    });
+
+    client.on("error", (err) => {
+      statusEl.textContent = "❌ Error: " + err;
+    });
+
+    // --- DATOS PARA GRAFICAR ---
+    const tiempo = [];
+    const datosTemp = [];
+    const datosHum = [];
+
+    // --- CONFIGURAR CHART.JS ---
+    const ctx = document.getElementById("grafico").getContext("2d");
+    const grafico = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: tiempo,
+        datasets: [
+          {
+            label: "Temperatura (°C)",
+            data: datosTemp,
+            borderColor: "#ff6b6b",
+            backgroundColor: "rgba(255,107,107,0.1)",
+            tension: 0.2,
+          },
+          {
+            label: "Humedad (%)",
+            data: datosHum,
+            borderColor: "#4fc3f7",
+            backgroundColor: "rgba(79,195,247,0.1)",
+            tension: 0.2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: { display: true, text: "Tiempo" },
+            ticks: { color: "#ccc" },
+          },
+          y: {
+            title: { display: true, text: "Valor" },
+            ticks: { color: "#ccc" },
+          },
+        },
+        plugins: {
+          legend: {
+            labels: { color: "#fff" },
+          },
+        },
+      },
+    });
+
+    // --- RECIBIR DATOS MQTT ---
+    client.on("message", (topic, message) => {
+      const valor = parseFloat(message.toString());
+      const hora = new Date().toLocaleTimeString();
+
+      if (topic === "Estacion/temperatura") {
+        datosTemp.push(valor);
+      } else if (topic === "Estacion/humedad") {
+        datosHum.push(valor);
+      }
+
+      // Asegurarse de tener siempre la misma cantidad de puntos
+      if (!tiempo.includes(hora)) tiempo.push(hora);
+      if (tiempo.length > 20) {
+        tiempo.shift();
+        datosTemp.shift();
+        datosHum.shift();
+      }
+
+      grafico.update();
+    });
+  </script>
+</body>
+</html>
