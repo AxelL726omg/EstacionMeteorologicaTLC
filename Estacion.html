@@ -156,7 +156,7 @@
 
     // --- FUNCION PARA ACTUALIZAR BRÚJULA ---
     function actualizarBrujula(dir) {
-      const angulo = angulos[dir] ?? 0;
+      const angulo = angulos[dir.split(' ')[0]] ?? 0; // toma solo la palabra cardinal
       aguja.style.transform = `translate(-50%, -100%) rotate(${angulo}deg)`;
       dirTexto.textContent = `Viento: ${dir}`;
     }
@@ -184,26 +184,32 @@
       }
     });
 
-    // --- API OpenWeatherMap ---
-    const API_KEY = "TU_API_KEY"; // reemplazar con tu API key
+    // --- API Open-Meteo (gratuita) ---
     const LAT = -34.6585; // Parque Avellaneda
     const LON = -58.4898;
 
     async function obtenerViento() {
       try {
-        const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${LAT}&lon=${LON}&appid=${API_KEY}&units=metric`);
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current_weather=true&timezone=auto`;
+        const resp = await fetch(url);
         const data = await resp.json();
-        const deg = data.wind.deg;        // dirección en grados
-        const speed = data.wind.speed;    // velocidad en m/s
 
-        // Convertir grados a dirección cardinal
+        if (!data.current_weather) {
+          console.warn("Viento no disponible", data);
+          return;
+        }
+
+        const deg = data.current_weather.winddirection; // grados
+        const speed = data.current_weather.windspeed;   // km/h
+
         const direcciones = ["Norte","Noreste","Este","Sureste","Sur","Suroeste","Oeste","Noroeste"];
         const index = Math.floor(((deg + 22.5) % 360) / 45);
         const dirCardinal = direcciones[index];
 
-        actualizarBrujula(dirCardinal + ` (${speed.toFixed(1)} m/s)` );
+        actualizarBrujula(dirCardinal + ` (${speed.toFixed(1)} km/h)` );
+
       } catch(err) {
-        console.error("Error API OpenWeatherMap:", err);
+        console.error("Error API viento:", err);
       }
     }
 
