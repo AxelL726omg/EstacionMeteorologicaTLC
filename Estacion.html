@@ -107,15 +107,11 @@
   </div>
 
   <script>
-    // --- CONFIGURACIÓN MQTT (Flespi) ---
+    // --- CONFIGURACIÓN MQTT ---
     const MQTT_BROKER = "wss://mqtt.flespi.io:443";
     const MQTT_TOKEN = "8geCXLJuofGJb2UAOnoiDyxrY9mHIsj2nVyvnC2vVUCdew8Gc37OPhDi0bFrcL4D";
 
-    const client = mqtt.connect(MQTT_BROKER, {
-      username: MQTT_TOKEN,
-      password: "",
-      keepalive: 60,
-    });
+    const client = mqtt.connect(MQTT_BROKER, { username: MQTT_TOKEN, password: "", keepalive: 60 });
 
     const statusEl = document.getElementById("status");
     const aguja = document.getElementById("aguja");
@@ -137,7 +133,7 @@
     const datosTemp = [];
     const datosHum = [];
 
-    // --- CONFIGURAR GRÁFICOS ---
+    // --- GRÁFICOS ---
     const ctxTemp = document.getElementById("graficoTemp").getContext("2d");
     const graficoTemp = new Chart(ctxTemp, {
       type: "line",
@@ -151,17 +147,19 @@
       options:{ responsive:true, scales:{ x:{ ticks:{color:"#ccc"} }, y:{ min:0,max:100,ticks:{color:"#ccc"} } }, plugins:{ legend:{labels:{color:"#fff"}}} }
     });
 
-    // --- MAPA DIRECCIONES ---
+    // --- BRÚJULA ---
     const angulos = { "Norte":0,"Noreste":45,"Este":90,"Sureste":135,"Sur":180,"Suroeste":225,"Oeste":270,"Noroeste":315 };
 
-    // --- FUNCION PARA ACTUALIZAR BRÚJULA ---
-    function actualizarBrujula(vel, dir) {
-      const angulo = angulos[dir] ?? 0;
+    let vientoDir = "---";
+    let vientoVel = "---";
+
+    function actualizarBrujula() {
+      const angulo = angulos[vientoDir] ?? 0;
       aguja.style.transform = `translate(-50%, -100%) rotate(${angulo}deg)`;
-      dirTexto.textContent = `Viento: ${vel} ${dir}`;
+      dirTexto.textContent = `Viento: ${vientoVel} ${vientoDir}`;
     }
 
-    // --- RECIBIR DATOS MQTT ---
+    // --- MQTT ---
     client.on("message", (topic, message) => {
       const valor = message.toString();
       const hora = new Date().toLocaleTimeString();
@@ -180,43 +178,33 @@
         graficoHum.update();
       }
       if (topic === "Estacion/direccionDelViento") {
-        actualizarBrujula("---", valor.trim());
+        vientoDir = valor.trim();
+        actualizarBrujula();
       }
     });
 
-    // --- API Open-Meteo (gratuita) ---
-    const LAT = -34.6585; // Parque Avellaneda
+    // --- Open-Meteo para velocidad ---
+    const LAT = -34.6585;
     const LON = -58.4898;
 
-    async function obtenerViento() {
+    async function obtenerVelocidad() {
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current_weather=true&timezone=auto`;
         const resp = await fetch(url);
         const data = await resp.json();
 
-        if (!data.current_weather) {
-          console.warn("Viento no disponible", data);
-          return;
-        }
+        if (!data.current_weather) return;
 
-        const deg = data.current_weather.winddirection; // grados
-        const speed = data.current_weather.windspeed;   // km/h
-
-        const direcciones = ["Norte","Noreste","Este","Sureste","Sur","Suroeste","Oeste","Noroeste"];
-        const index = Math.floor(((deg + 22.5) % 360) / 45);
-        const dirCardinal = direcciones[index];
-
-        // Velocidad primero, dirección después
-        actualizarBrujula(speed.toFixed(1) + " km/h", dirCardinal);
+        vientoVel = data.current_weather.windspeed.toFixed(1) + " km/h";
+        actualizarBrujula();
 
       } catch(err) {
-        console.error("Error API viento:", err);
+        console.error("Error Open-Meteo:", err);
       }
     }
 
-    // Actualiza cada 30 segundos
-    obtenerViento();
-    setInterval(obtenerViento, 30000);
+    obtenerVelocidad();
+    setInterval(obtenerVelocidad, 30000);
 
   </script>
 </body>
