@@ -155,10 +155,10 @@
     const angulos = { "Norte":0,"Noreste":45,"Este":90,"Sureste":135,"Sur":180,"Suroeste":225,"Oeste":270,"Noroeste":315 };
 
     // --- FUNCION PARA ACTUALIZAR BRÚJULA ---
-    function actualizarBrujula(dir) {
-      const angulo = angulos[dir.split(' ')[0]] ?? 0; // toma solo la palabra cardinal
+    function actualizarBrujula(vel, dir) {
+      const angulo = angulos[dir] ?? 0;
       aguja.style.transform = `translate(-50%, -100%) rotate(${angulo}deg)`;
-      dirTexto.textContent = `Viento: ${dir}`;
+      dirTexto.textContent = `Viento: ${vel} ${dir}`;
     }
 
     // --- RECIBIR DATOS MQTT ---
@@ -180,7 +180,7 @@
         graficoHum.update();
       }
       if (topic === "Estacion/direccionDelViento") {
-        actualizarBrujula(valor.trim());
+        actualizarBrujula("---", valor.trim());
       }
     });
 
@@ -206,7 +206,8 @@
         const index = Math.floor(((deg + 22.5) % 360) / 45);
         const dirCardinal = direcciones[index];
 
-        actualizarBrujula(dirCardinal + ` (${speed.toFixed(1)} km/h)` );
+        // Velocidad primero, dirección después
+        actualizarBrujula(speed.toFixed(1) + " km/h", dirCardinal);
 
       } catch(err) {
         console.error("Error API viento:", err);
